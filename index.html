@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>チェスゲーム</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <div class="container">
+    <div id="chessboard"></div>
+    <div id="game-info">
+      <div id="current-turn">現在の手番: <span id="turn-display">白</span></div>
+      <div id="timers">
+        <div id="white-time">白の持ち時間: <span id="white-timer">00:00</span></div>
+        <div id="black-time">黒の持ち時間: <span id="black-timer">00:00</span></div>
+      </div>
+      <label for="initial-time">初期持ち時間 (秒):</label>
+      <input type="number" id="initial-time" min="1" value="300">
+      <button id="set-time">設定</button>
+      <button id="reset">リセット</button>
+    </div>
+  </div>
+  <div id="instructions">
+    <h2>操作説明</h2>
+    <p>1. 駒を右クリックで選択</p>
+    <p>2. 移動先のマスを右クリックで移動</p>
+    <p>3. キングをチェックアウトすることで勝利</p><br>
+    <p>キャスリングは未実装</p>
+  </div>
+
+  <script src="chess.js"></script>
+</body>
+
+</html>
