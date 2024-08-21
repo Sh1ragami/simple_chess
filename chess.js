@@ -502,7 +502,7 @@ function switchTurn() {
     turnDisplay.textContent = name;
 
     if (isCheckMate()) {
-        handleGameOver(`${name}のチェック`);
+        alert(`${name}のチェック`);
     }
 }
 
@@ -515,6 +515,7 @@ function handleGameOver(message) {
 
 // リセットボタンのイベントリスナー
 resetButton.addEventListener('click', () => {
+    gameOverFlag = false;
     createBoard();
     setupPieces();
     resetSelection();
