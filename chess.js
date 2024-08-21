@@ -258,6 +258,12 @@ function getPieceAt(row, col) {
     return square ? square.textContent : null;
 }
 
+// 音声を再生する関数
+function playSound() {
+    const audio = new Audio('audio/move.mp3');
+    audio.play();
+}
+
 // 駒を移動する
 function movePiece(from, to) {
     const fromSquare = document.querySelector(`[data-row="${from.row}"][data-col="${from.col}"]`);
@@ -265,6 +271,8 @@ function movePiece(from, to) {
 
     toSquare.textContent = fromSquare.textContent;
     fromSquare.textContent = '';
+    playSound();
+
 }
 
 // キャスリングの処理
