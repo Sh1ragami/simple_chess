@@ -65,8 +65,7 @@ function onSquareClick(event) {
 
     if (gameOverFlag) {
         return;
-    }
-    else if (!selectedPiece) {
+    } else if (!selectedPiece) {
         // 駒が選択されていない場合
         if ((turn === 'white' && isWhitePiece(piece)) || (turn === 'black' && isBlackPiece(piece))) {
             selectedPiece = piece;
@@ -82,15 +81,7 @@ function onSquareClick(event) {
             });
         }
     } else {
-        if (selectedPiece === '♔' && isValidCastling(selectedPosition, { row, col })) {
-            handleCastling(selectedPosition, { row, col });
-            resetSelection();
-            switchTurn();
-            stopTimer();
-            startTimer();
-        }
-        // 駒が選択されている場合
-        else if (isValidMove(selectedPiece, selectedPosition, { row, col })) {
+        if (isValidMove(selectedPiece, selectedPosition, { row, col })) {
             if (isMoveToFriendlyPiece(selectedPosition, { row, col })) {
                 resetSelection();
                 return;
@@ -110,6 +101,7 @@ function onSquareClick(event) {
         }
     }
 }
+
 
 // 駒の選択をリセットする
 function resetSelection() {
