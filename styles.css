@@ -10,6 +10,7 @@ body {
 }
 
 .container {
+    margin-top: 150px;
     margin-left: 360px;
     display: flex;
     justify-content: center;
@@ -138,6 +139,7 @@ button:active {
 /* レスポンシブデザイン対応 */
 @media (max-width: 768px) {
     .container {
+        margin-right: 40px;
         margin-left: 0px;
         margin-top: 380px;
         flex-direction: column;
@@ -162,6 +164,13 @@ button:active {
         width: 100%;
         max-width: 300px;
     }
+
+    #game-info div,
+    #game-info button,
+    #game-info label,
+    #game-info input {
+        margin-left: 60px;
+    }
 }
 
 @media (max-width: 480px) {
@@ -177,5 +186,12 @@ button:active {
 
     #game-info {
         padding: 15px;
+    }
+
+    #game-info div,
+    #game-info button,
+    #game-info label,
+    #game-info input {
+        margin-left: 60px;
     }
 }
