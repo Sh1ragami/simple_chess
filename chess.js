@@ -42,7 +42,7 @@ function createBoard() {
 function setupPieces() {
     const initialSetup = [
         ['♖', '♘', '♗', '♕', '♔', '♗', '♘', '♖'],
-        ['♙', '♙', '♙', '♙', '♙', '♙', '♙', '♙'],
+        ['♙', '♙', '♙', '♙', '♙', '♙', '♙', '♙', '♙'],
         [], [], [], [],
         ['♟', '♟', '♟', '♟', '♟', '♟', '♟', '♟'],
         ['♜', '♞', '♝', '♛', '♚', '♝', '♞', '♜']
@@ -63,18 +63,35 @@ function onSquareClick(event) {
     const col = parseInt(square.dataset.col);
     const piece = square.textContent;
 
-    if (!selectedPiece) {
+    if (gameOverFlag) {
+        return;
+    }
+    else if (!selectedPiece) {
         // 駒が選択されていない場合
         if ((turn === 'white' && isWhitePiece(piece)) || (turn === 'black' && isBlackPiece(piece))) {
             selectedPiece = piece;
             selectedPosition = { row, col };
             highlightSelectedPiece(square);
+            // 移動可能なマスをハイライト
+            const possibleMoves = getPossibleMoves(piece, selectedPosition);
+            possibleMoves.forEach(move => {
+                const moveSquare = document.querySelector(`[data-row="${move.row}"][data-col="${move.col}"]`);
+                if (moveSquare) {
+                    moveSquare.classList.add('highlight');
+                }
+            });
         }
     } else {
+        if (selectedPiece === '♔' && isValidCastling(selectedPosition, { row, col })) {
+            handleCastling(selectedPosition, { row, col });
+            resetSelection();
+            switchTurn();
+            stopTimer();
+            startTimer();
+        }
         // 駒が選択されている場合
-        if (isValidMove(selectedPiece, selectedPosition, { row, col })) {
+        else if (isValidMove(selectedPiece, selectedPosition, { row, col })) {
             if (isMoveToFriendlyPiece(selectedPosition, { row, col })) {
-                alert('味方の駒の上には移動できません');
                 resetSelection();
                 return;
             }
@@ -82,7 +99,10 @@ function onSquareClick(event) {
             movePiece(selectedPosition, { row, col });
             handleSpecialMoves(selectedPosition, { row, col });
             resetSelection();
-            switchTurn(); // 手番を切り替える
+            if (isKingCaptured()) {
+                return;
+            }
+            switchTurn();
             stopTimer();
             startTimer();
         } else {
@@ -93,7 +113,7 @@ function onSquareClick(event) {
 
 // 駒の選択をリセットする
 function resetSelection() {
-    clearHighlight(); // 既存のハイライトをクリア
+    clearHighlight();
     selectedPiece = null;
     selectedPosition = null;
 }
@@ -104,6 +124,11 @@ function clearHighlight() {
     if (selectedSquare) {
         selectedSquare.classList.remove('selected');
     }
+    // 移動可能なマスのハイライトもクリア
+    const highlightedSquares = document.querySelectorAll('.highlight');
+    highlightedSquares.forEach(square => {
+        square.classList.remove('highlight');
+    });
 }
 
 // タイマーの開始
@@ -167,13 +192,13 @@ function isValidMove(piece, from, to) {
 
     switch (piece) {
         case '♙': // 白ポーン
-            return (dx === 1 && dy === 0 && !getPieceAt(to.row, to.col)) ||
-                (dx === 1 && dy === 1 && isBlackPiece(getPieceAt(to.row, to.col))) ||
-                (from.row === 1 && dx === 2 && dy === 0 && !getPieceAt(to.row, to.col));
+            return (from.row === to.row - 1 && dy === 0 && !getPieceAt(to.row, to.col)) || // 1マス前進
+                (from.row === 1 && to.row === from.row + 2 && dy === 0 && !getPieceAt(to.row, to.col)) || // 初期位置からの2マス前進
+                (from.row === to.row - 1 && dy === 1 && isBlackPiece(getPieceAt(to.row, to.col))); // 捕獲
         case '♟': // 黒ポーン
-            return (dx === 1 && dy === 0 && !getPieceAt(to.row, to.col)) ||
-                (dx === 1 && dy === 1 && isWhitePiece(getPieceAt(to.row, to.col))) ||
-                (from.row === 6 && dx === 2 && dy === 0 && !getPieceAt(to.row, to.col));
+            return (from.row === to.row + 1 && dy === 0 && !getPieceAt(to.row, to.col)) || // 1マス前進
+                (from.row === 6 && to.row === from.row - 2 && dy === 0 && !getPieceAt(to.row, to.col)) || // 初期位置からの2マス前進
+                (from.row === to.row + 1 && dy === 1 && isWhitePiece(getPieceAt(to.row, to.col))); // 捕獲
         case '♖': // ルーク
             return (dx === 0 || dy === 0) && !isObstructed(from, to);
         case '♗': // ビショップ
@@ -197,6 +222,7 @@ function isValidMove(piece, from, to) {
     }
     return false;
 }
+
 
 // 移動先に味方の駒があるかどうかを判定
 function isMoveToFriendlyPiece(from, to) {
@@ -416,16 +442,75 @@ function handleSpecialMoves(from, to) {
     handleEnPassant(from, to);
 }
 
+// チェックメイトの検出
+function isCheckMate() {
+    const kingPosition = findKingPosition(turn);
+
+    if (!kingPosition) {
+        return false; // キングが見つからない場合はチェックメイトではない
+    }
+
+    if (!isKingInCheck(kingPosition, cloneBoard())) {
+        return false; // キングがチェックされていない場合はチェックメイトではない
+    }
+
+    // 現在のプレイヤーの全ての駒の移動可能な手をチェック
+    const pieces = document.querySelectorAll(`[data-row="${kingPosition.row}"][data-col="${kingPosition.col}"] .piece`);
+    for (const piece of pieces) {
+        const piecePosition = { row: piece.dataset.row, col: piece.dataset.col };
+        const possibleMoves = getPossibleMoves(piece.textContent, piecePosition);
+
+        for (const move of possibleMoves) {
+            const tempBoard = cloneBoard();
+            movePieceTemporary(piecePosition, move, tempBoard);
+
+            const newKingPosition = findKingPosition(turn);
+            if (!isKingInCheck(newKingPosition, tempBoard)) {
+                return false; // いずれかの移動がチェックを解消する場合
+            }
+        }
+    }
+
+    return true; // いずれの手もチェックを解消できない場合
+}
+
+// キングが取られたかの判定
+function isKingCaptured() {
+    const whiteKingPosition = findKingPosition('white');
+    const blackKingPosition = findKingPosition('black');
+
+    // 白のキングが取られているか
+    if (!whiteKingPosition) {
+        handleGameOver('黒の勝利');
+        return true;
+    }
+
+    // 黒のキングが取られているか
+    if (!blackKingPosition) {
+        handleGameOver('白の勝利');
+        return true;
+    }
+
+    return false;
+}
+
+
 // 手番を切り替える
 function switchTurn() {
     turn = turn === 'white' ? 'black' : 'white';
-    turnDisplay.textContent = `${turn.charAt(0).toUpperCase() + turn.slice(1)}`;
+    var name = turn === 'white' ? '白' : '黒';
+    turnDisplay.textContent = name;
+
+    if (isCheckMate()) {
+        handleGameOver(`${name}のチェック`);
+    }
 }
 
 // ゲームオーバーの処理
 function handleGameOver(message) {
     gameOverFlag = true;
     alert(message);
+    stopTimer();
 }
 
 // リセットボタンのイベントリスナー
@@ -433,16 +518,17 @@ resetButton.addEventListener('click', () => {
     createBoard();
     setupPieces();
     resetSelection();
-    switchTurn();
+    turn = 'white';
+    turnDisplay.textContent = `白`;
     stopTimer();
-    whiteTime = blackTime = parseInt(initialTimeInput.value) * 60 || 300;
+    whiteTime = blackTime = parseInt(initialTimeInput.value) || 300;
     updateTimerDisplay();
     startTimer();
 });
 
 // タイマー設定ボタンのイベントリスナー
 setTimeButton.addEventListener('click', () => {
-    whiteTime = blackTime = parseInt(initialTimeInput.value) * 60 || 300;
+    whiteTime = blackTime = parseInt(initialTimeInput.value) || 300;
     updateTimerDisplay();
 });
 
